@@ -11,6 +11,7 @@ typedef enum {
     DzLayerUpper,
     DzLayerNumbers,
     DzLayerSymbols,
+    DzLayerExtraSymbols,
     DzLayerCount,
 } DzLayer;
 
@@ -42,6 +43,8 @@ bool dz_editor_insert(DzEditor* editor, char ch);
 bool dz_editor_backspace(DzEditor* editor);
 bool dz_editor_move(DzEditor* editor, int8_t dx, int8_t dy);
 void dz_editor_cycle_layer(DzEditor* editor);
+// 1 = next, -1 = previous; wraps around and returns to cell navigation.
+void dz_editor_step_layer(DzEditor* editor, int8_t step);
 void dz_editor_select_cell(DzEditor* editor);
 void dz_editor_cancel_choice(DzEditor* editor);
 // Returns the selected character, including '\b' for delete and '\0' for an empty choice.
