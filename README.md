@@ -8,12 +8,13 @@ buttons. The keyboard is **not** a firmware-wide text-input replacement.
 
 - Implemented: single-line, append/backspace ASCII text editor (255 characters)
 - Implemented: authentic Danzeff character table, including cases, digits and symbols
-- Implemented: two-stage navigation/choice UI with inline cells and directional hover
+- Implemented: two-stage navigation/choice UI with aligned, compressed hover expansion
 - Implemented: three fixed, timed typing trials and CSV result capture
 - Implemented: persistent free-edit draft on the SD card
 - Verified: portable keyboard engine passes local C11 unit tests
 - Verified by initial tester: v0.1 compiles with uFBT and runs on Flipper Zero.
-- Not yet verified on-device: v0.2 expanded hover and automatic home reset.
+- Verified by tester: v0.2 renders on-device; inconsistent row reflow motivates v0.3.
+- Not yet verified on-device: v0.3 aligned grid geometry and hold-key layer switching.
 
 ## Controls
 
@@ -22,13 +23,14 @@ buttons. The keyboard is **not** a firmware-wide text-input replacement.
 | Main menu | Up / Down | Select a menu item |
 | Main menu | OK | Open the selection |
 | Main menu | Back | Exit app |
-| Editor: grid | D-pad | Move between 3×3 cells |
+| Editor: grid | Short D-pad | Move between 3×3 cells |
+| Editor: grid | Hold Left / Right | Previous / next character set (wraps) |
 | Editor: grid | Focused cell | Enlarges to show the 4 directional characters |
 | Editor: grid | OK short | Select the cell (double-thick border) |
 | Editor: choosing | Up / Left / Down / Right | Enter the displayed character, reset focus to center |
 | Editor: choosing | Back short | Cancel choice |
 | Editor: grid | Back short | Delete the last character |
-| Editor | OK long | Cycle lowercase → uppercase → digits → symbols |
+| Editor | OK long | Cycle lowercase → uppercase → digits → symbols → extra symbols |
 | Editor | Back long | Return to menu; saves free-edit draft |
 | Results | OK short | Retry the same phrase |
 | Results | Back short | Return to menu |
@@ -37,17 +39,32 @@ The character positions mirror the original PSP implementation: Triangle =
 **Up**, Square = **Left**, Cross = **Down**, Circle = **Right**. The central
 lowercase cell is `[backspace, m, space, n]` in that order. In the cell grid,
 `<` means backspace and `_` means space. Blank entries in the numbers layer
-have no function; they leave the four-way chooser open.
+have no function; they leave the four-way chooser open. A usable `0` has been
+added to the numbers layer at center-cell Left. An extra symbol page (`EX+`)
+regroups common ASCII punctuation and digits for quicker access. The original
+four Danzeff pages otherwise retain their mappings.
 
 ### Example: type `a`
 
 From the default center cell, press **Up**, **Left**, **OK**, **Left**.
 That enters `a` and returns to the grid **with the middle cell highlighted**.
-A hovered cell previews its four characters in a small directional cross. Press
+A hovered cell previews its four characters in a small directional cross.
+The 3×3 cells stay in aligned rows/columns; the focused cell is only 42×18 px
+(compared with 44×20 px in v0.2), and minimized cells are 40×10 px. Press
 OK to activate the double-thick border; press a direction to type. Non-hovered
 cells always keep their four characters inline, so the full layout remains
 visible. Canceling selection with Back retains the hovered cell. Choosing an
 empty position in the number layer keeps the selection open.
+
+## Character-set switching
+
+In **grid mode**, hold Left for the previous set and Right for the next set:
+`abc ↔ ABC ↔ 123 ↔ SYM ↔ EX+` (wraps at either end). Hold OK still
+advances one set. The current set is displayed next to the entered-text
+preview, even during a timed trial. While choosing a character, normal short
+arrow presses still type the expected character; hold Left/Right only switches
+sets in grid mode. Horizontal navigation intentionally does not auto-repeat
+because a hold switches the page.
 
 ## Build and install
 
@@ -102,7 +119,7 @@ not to serve as a full-featured notepad.
 ## Future experiments
 
 - Two-button-chord or long-press shortcuts to skip the cell-open step
-- A/B testing of v0.1 retained-selection navigation vs v0.2 home-reset navigation
+- A/B testing of v0.1 retained-selection navigation vs v0.2+ home-reset navigation
 - Alternative layouts designed specifically for the Flipper D-pad
 - In-device comparison against the Flipper's stock text entry mechanism
 - Adaptive visual hints and practice indicators
