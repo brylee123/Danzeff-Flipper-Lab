@@ -4,6 +4,8 @@ App(
     apptype=FlipperAppType.EXTERNAL,
     entry_point="danzeff_lab_app",
     requires=["gui", "storage"],
+    # Keep native-only tests out of the firmware build.
+    sources=["danzeff_lab.c", "danzeff_core.c"],
     stack_size=2048,
     fap_category="Tools",
     fap_description="Danzeff keyboard text editor and typing trials",
