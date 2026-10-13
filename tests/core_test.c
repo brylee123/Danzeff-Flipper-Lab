@@ -1,4 +1,8 @@
 #include "../danzeff_core.h"
+// Ensure host assertions remain active when NDEBUG is defined.
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
