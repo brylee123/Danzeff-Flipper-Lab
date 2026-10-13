@@ -265,17 +265,30 @@ static void lab_handle_input(DanzeffLab* app, const InputEvent* event) {
 // This is display-only; the underlying editor continues to store ASCII ' '.
 static char lab_visual_char(char c) {
     if(c == 0) return ' ';
-    if(c == '\b') return '<';
     return c;
 }
 
 static size_t lab_key_width(Canvas* canvas, char character) {
     if(character == ' ') return 5; // Compact 5x3-pixel space indicator.
+    if(character == '\b') return 9; // Custom 9x7 backspace key icon.
     return canvas_glyph_width(canvas, (uint8_t)lab_visual_char(character));
 }
 
 static void lab_draw_key(Canvas* canvas, int32_t x, int32_t baseline, char character) {
     if(character == 0) return;
+    if(character == '\b') {
+        // Draw a 9x7 pixel U+232B ERASE TO THE LEFT (backspace) symbol.
+        // The icon has a left-pointing outline and a compact X inside.
+        // A pixel drawing avoids relying on FontKeyboard Unicode support.
+        canvas_draw_line(canvas, x + 3, baseline - 6, x + 8, baseline - 6);
+        canvas_draw_line(canvas, x + 8, baseline - 6, x + 8, baseline);
+        canvas_draw_line(canvas, x + 3, baseline, x + 8, baseline);
+        canvas_draw_line(canvas, x, baseline - 3, x + 3, baseline - 6);
+        canvas_draw_line(canvas, x, baseline - 3, x + 3, baseline);
+        canvas_draw_line(canvas, x + 4, baseline - 4, x + 6, baseline - 2);
+        canvas_draw_line(canvas, x + 6, baseline - 4, x + 4, baseline - 2);
+        return;
+    }
     if(character == ' ') {
         // 5x3-pixel U+23B5-like mark, matched to the v0.6 pixel mockup:
         // #...#
@@ -308,7 +321,7 @@ static void lab_draw_menu(Canvas* canvas, const DanzeffLab* app) {
         "Trial: quick brown fox", "How to use",
     };
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str(canvas, 3, 10, "Danzeff Lab v0.7");
+    canvas_draw_str(canvas, 3, 10, "Danzeff Lab v0.8");
     canvas_set_font(canvas, FontSecondary);
     for(uint8_t i = 0; i < MENU_ITEMS; ++i) {
         lab_draw_label(canvas, 2, (uint8_t)(13 + i * 10), options[i], i == app->menu_selection);

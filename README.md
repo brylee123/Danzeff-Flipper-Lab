@@ -18,7 +18,8 @@ for canceling or leaving the editor, never for deleting text. The keyboard is **
 - Verified in CI: v0.4 builds using the official release SDK and passes portable tests.
 - v0.5 anchors compact cells to the LCD edges.
 - v0.6 shortens the drawn whitespace mark from 6×5 to 5×3 pixels without changing the cell layout.
-- v0.7 restricts text editing to five buttons and removes hardware Back-to-delete; on-device verification is pending.
+- v0.7 restricts text editing to five buttons and removes hardware Back-to-delete.
+- v0.8 uses a compact custom 9×7 pixel **⌫** backspace symbol instead of `<` while preserving the on-screen delete action; on-device verification is pending.
 
 ## Controls
 
@@ -47,7 +48,7 @@ An unfinished typing trial is abandoned when returning to the menu.
 The character positions mirror the original PSP implementation: Triangle =
 **Up**, Square = **Left**, Cross = **Down**, Circle = **Right**. The central
 lowercase cell is `[backspace, m, space, n]` in that order. In the cell grid,
-`<` means backspace; **⎵** indicates space (rendered as a compact 5×3-pixel open-top bracket matching the v0.6 mockup; text storage remains ASCII space). Blank entries in the numbers layer
+**⌫** means backspace (drawn as a 9×7-pixel icon); **⎵** indicates space (rendered as a compact 5×3-pixel open-top bracket matching the v0.6 mockup; text storage remains ASCII space). Blank entries in the numbers layer
 have no function; they leave the four-way chooser open. A usable `0` has been
 added to the numbers layer at center-cell Left. An extra symbol page (`EX+`)
 regroups common ASCII punctuation and digits for quicker access. The original
