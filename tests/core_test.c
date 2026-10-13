@@ -24,6 +24,8 @@ static void test_original_layout(void) {
     dz_editor_cycle_layer(&e);
     assert(dz_editor_cell_char(&e, 1, 2, DzDirectionLeft) == '\\');
     dz_editor_cycle_layer(&e);
+    assert(e.layer == DzLayerExtraSymbols);
+    dz_editor_cycle_layer(&e);
     assert(e.layer == DzLayerLower);
 }
 
@@ -57,13 +59,14 @@ static void test_digits_empty_selection(void) {
     dz_editor_init(&e);
     dz_editor_cycle_layer(&e);
     dz_editor_cycle_layer(&e);
+    assert(dz_editor_move(&e, -1, -1));
     dz_editor_select_cell(&e);
     char ch = '\xff';
     assert(!dz_editor_choose(&e, DzDirectionLeft, &ch));
     assert(ch == '\0' && e.phase == DzPhaseChoose);
-    assert(e.row == 1 && e.col == 1); // Invalid choice does not exit.
+    assert(e.row == 0 && e.col == 0); // Invalid choice keeps its cell.
     assert(dz_editor_choose(&e, DzDirectionRight, &ch));
-    assert(ch == '5' && strcmp(e.text, "5") == 0);
+    assert(ch == '1' && strcmp(e.text, "1") == 0);
     assert(e.row == 1 && e.col == 1);
 }
 
@@ -89,6 +92,38 @@ static void test_recenter_and_cancel(void) {
     assert(e.row == 1 && e.col == 1);
 }
 
+
+static void test_layers_and_extra_symbols(void) {
+    DzEditor e;
+    dz_editor_init(&e);
+    // Long-left wraps from lowercase to the new extra-symbol page.
+    dz_editor_step_layer(&e, -1);
+    assert(e.layer == DzLayerExtraSymbols);
+    assert(strcmp(dz_layer_name(e.layer), "EX+") == 0);
+    assert(dz_editor_cell_char(&e, 1, 1, DzDirectionLeft) == '0');
+    assert(dz_editor_cell_char(&e, 0, 0, DzDirectionUp) == '@');
+    dz_editor_select_cell(&e);
+    char ch = 0;
+    assert(dz_editor_choose(&e, DzDirectionLeft, &ch));
+    assert(ch == '0' && strcmp(e.text, "0") == 0);
+    assert(e.phase == DzPhaseGrid && e.row == 1 && e.col == 1);
+    // Long-right wraps back to lowercase. Neighboring modes work both ways.
+    dz_editor_step_layer(&e, 1);
+    assert(e.layer == DzLayerLower);
+    dz_editor_step_layer(&e, 1);
+    assert(e.layer == DzLayerUpper);
+    dz_editor_step_layer(&e, -1);
+    assert(e.layer == DzLayerLower);
+    dz_editor_step_layer(&e, 1);
+    dz_editor_step_layer(&e, 1);
+    assert(e.layer == DzLayerNumbers);
+    // Number-pad includes 0, which the original Danzeff layout lacked.
+    assert(dz_editor_cell_char(&e, 1, 1, DzDirectionLeft) == '0');
+    dz_editor_select_cell(&e);
+    dz_editor_step_layer(&e, -1);
+    assert(e.layer == DzLayerUpper && e.phase == DzPhaseGrid);
+}
+
 static void test_capacity(void) {
     DzEditor e;
     dz_editor_init(&e);
@@ -103,6 +138,7 @@ int main(void) {
     test_typing_and_cursor();
     test_digits_empty_selection();
     test_recenter_and_cancel();
+    test_layers_and_extra_symbols();
     test_capacity();
     puts("All Danzeff core tests passed.");
     return 0;
