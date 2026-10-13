@@ -271,7 +271,7 @@ static void lab_draw_menu(Canvas* canvas, const DanzeffLab* app) {
         "Trial: quick brown fox", "How to use",
     };
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str(canvas, 3, 10, "Danzeff Lab v0.1");
+    canvas_draw_str(canvas, 3, 10, "Danzeff Lab v0.2");
     canvas_set_font(canvas, FontSecondary);
     for(uint8_t i = 0; i < MENU_ITEMS; ++i) {
         lab_draw_label(canvas, 2, (uint8_t)(13 + i * 10), options[i], i == app->menu_selection);
@@ -282,11 +282,11 @@ static void lab_draw_help(Canvas* canvas) {
     canvas_set_font(canvas, FontPrimary);
     canvas_draw_str(canvas, 2, 10, "Danzeff controls");
     canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str(canvas, 2, 21, "Arrows: move 3x3 grid");
-    canvas_draw_str(canvas, 2, 31, "OK: open cell");
-    canvas_draw_str(canvas, 2, 41, "Arrow: type one character");
-    canvas_draw_str(canvas, 2, 51, "Hold OK: next layer");
-    canvas_draw_str(canvas, 2, 61, "Back: delete / cancel");
+    canvas_draw_str(canvas, 2, 21, "D-pad: move focus");
+    canvas_draw_str(canvas, 2, 31, "Hover: direction preview");
+    canvas_draw_str(canvas, 2, 41, "OK: select (double border)");
+    canvas_draw_str(canvas, 2, 51, "D-pad: type, then home");
+    canvas_draw_str(canvas, 2, 61, "Hold OK: layer Back:del");
 }
 
 static void lab_draw_preview(Canvas* canvas, const DanzeffLab* app) {
@@ -307,44 +307,55 @@ static void lab_draw_preview(Canvas* canvas, const DanzeffLab* app) {
     canvas_draw_str(canvas, 2, 20, line);
 }
 
+// Dynamic, non-overlapping grid: 40x11 inline cells, one 44x20 focused
+// cell. The other rows/columns shift just enough to keep all nine visible.
+// In the choose phase OK adds the second border, without hiding the grid.
+#define LAB_CELL_WIDTH   40
+#define LAB_CELL_HEIGHT  11
+#define LAB_HOVER_WIDTH  44
+#define LAB_HOVER_HEIGHT 20
+
 static void lab_draw_grid(Canvas* canvas, const DanzeffLab* app) {
-    canvas_set_font(canvas, FontSecondary);
+    const DzEditor* editor = &app->editor;
+    const bool choosing = editor->phase == DzPhaseChoose;
+    static const uint8_t dx[] = {20, 9, 20, 32};
+    static const uint8_t dy[] = {7, 13, 18, 13};
+    canvas_set_color(canvas, ColorBlack);
+    canvas_set_font(canvas, FontKeyboard);
+
     for(uint8_t row = 0; row < 3; ++row) {
         for(uint8_t col = 0; col < 3; ++col) {
-            const uint8_t x = (uint8_t)(1 + col * 42);
-            const uint8_t y = (uint8_t)(24 + row * 13);
-            const bool selected = app->editor.row == row && app->editor.col == col;
-            char characters[5];
-            for(uint8_t i = 0; i < 4; ++i) {
-                characters[i] = lab_visual_char(
-                    dz_editor_cell_char(&app->editor, row, col, (DzDirection)i));
-            }
-            characters[4] = '\0';
-            canvas_set_color(canvas, ColorBlack);
-            if(selected) {
-                canvas_draw_box(canvas, x, y, 40, 12);
-                canvas_set_color(canvas, ColorWhite);
-            } else {
-                canvas_draw_frame(canvas, x, y, 40, 12);
-            }
-            canvas_draw_str(canvas, x + 7, y + 9, characters);
-        }
-    }
-}
+            const bool focused = (row == editor->row && col == editor->col);
+            const int32_t x = (int32_t)col * 42 + ((col > editor->col) ? 4 : 0);
+            const int32_t y = 22 + (int32_t)row * 11 + ((row > editor->row) ? 9 : 0);
+            const int32_t width = focused ? LAB_HOVER_WIDTH : LAB_CELL_WIDTH;
+            const int32_t height = focused ? LAB_HOVER_HEIGHT : LAB_CELL_HEIGHT;
+            canvas_draw_frame(canvas, x, y, width, height);
 
-static void lab_draw_choice(Canvas* canvas, const DanzeffLab* app) {
-    canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str(canvas, 5, 30, "Choose a direction:");
-    const DzEditor* editor = &app->editor;
-    char label[12];
-    const char* const markers[] = {"Up", "Left", "Down", "Right"};
-    const uint8_t xs[] = {54, 12, 50, 84};
-    const uint8_t ys[] = {39, 49, 59, 49};
-    for(uint8_t i = 0; i < 4; ++i) {
-        const char character = dz_editor_cell_char(editor, editor->row, editor->col, (DzDirection)i);
-        if(!character) continue;
-        snprintf(label, sizeof(label), "%s:%c", markers[i], lab_visual_char(character));
-        canvas_draw_str(canvas, xs[i], ys[i], label);
+            if(focused) {
+                if(choosing) {
+                    canvas_draw_frame(canvas, x + 1, y + 1, width - 2, height - 2);
+                }
+                //              Up
+                //          Left    Right
+                //             Down
+                for(uint8_t direction = 0; direction < 4; ++direction) {
+                    const char ch = dz_editor_cell_char(editor, row, col, (DzDirection)direction);
+                    if(!ch) continue;
+                    canvas_draw_glyph(canvas, x + dx[direction], y + dy[direction], lab_visual_char(ch));
+                }
+            } else {
+                // The original four characters stay visible inline in every
+                // minimized cell, even when another cell is being selected.
+                char characters[5];
+                for(uint8_t direction = 0; direction < 4; ++direction) {
+                    characters[direction] = lab_visual_char(
+                        dz_editor_cell_char(editor, row, col, (DzDirection)direction));
+                }
+                characters[4] = '\0';
+                canvas_draw_str(canvas, x + 7, y + 8, characters);
+            }
+        }
     }
 }
 
@@ -379,8 +390,7 @@ static void lab_draw(Canvas* canvas, void* context) {
     case LabPageHelp: lab_draw_help(canvas); break;
     case LabPageEditor:
         lab_draw_preview(canvas, app);
-        if(app->editor.phase == DzPhaseGrid) lab_draw_grid(canvas, app);
-        else lab_draw_choice(canvas, app);
+        lab_draw_grid(canvas, app);
         break;
     case LabPageResults: lab_draw_results(canvas, app); break;
     }

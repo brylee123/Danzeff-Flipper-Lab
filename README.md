@@ -8,13 +8,12 @@ buttons. The keyboard is **not** a firmware-wide text-input replacement.
 
 - Implemented: single-line, append/backspace ASCII text editor (255 characters)
 - Implemented: authentic Danzeff character table, including cases, digits and symbols
-- Implemented: two-stage navigation/choice UI for the 128×64 screen
+- Implemented: two-stage navigation/choice UI with inline cells and directional hover
 - Implemented: three fixed, timed typing trials and CSV result capture
 - Implemented: persistent free-edit draft on the SD card
 - Verified: portable keyboard engine passes local C11 unit tests
-- **Not yet verified:** cross-build against the Flipper SDK; no device or `.fap`
-  binary was available in the authoring environment. GitHub Actions will build
-  against the official SDK once pushed. Device testing is still required.
+- Verified by initial tester: v0.1 compiles with uFBT and runs on Flipper Zero.
+- Not yet verified on-device: v0.2 expanded hover and automatic home reset.
 
 ## Controls
 
@@ -24,8 +23,9 @@ buttons. The keyboard is **not** a firmware-wide text-input replacement.
 | Main menu | OK | Open the selection |
 | Main menu | Back | Exit app |
 | Editor: grid | D-pad | Move between 3×3 cells |
-| Editor: grid | OK short | Open the selected cell |
-| Editor: choosing | Up / Left / Down / Right | Enter the displayed character |
+| Editor: grid | Focused cell | Enlarges to show the 4 directional characters |
+| Editor: grid | OK short | Select the cell (double-thick border) |
+| Editor: choosing | Up / Left / Down / Right | Enter the displayed character, reset focus to center |
 | Editor: choosing | Back short | Cancel choice |
 | Editor: grid | Back short | Delete the last character |
 | Editor | OK long | Cycle lowercase → uppercase → digits → symbols |
@@ -42,7 +42,12 @@ have no function; they leave the four-way chooser open.
 ### Example: type `a`
 
 From the default center cell, press **Up**, **Left**, **OK**, **Left**.
-That enters `a` and returns to the grid, retaining the top-left selection.
+That enters `a` and returns to the grid **with the middle cell highlighted**.
+A hovered cell previews its four characters in a small directional cross. Press
+OK to activate the double-thick border; press a direction to type. Non-hovered
+cells always keep their four characters inline, so the full layout remains
+visible. Canceling selection with Back retains the hovered cell. Choosing an
+empty position in the number layer keeps the selection open.
 
 ## Build and install
 
@@ -97,6 +102,7 @@ not to serve as a full-featured notepad.
 ## Future experiments
 
 - Two-button-chord or long-press shortcuts to skip the cell-open step
+- A/B testing of v0.1 retained-selection navigation vs v0.2 home-reset navigation
 - Alternative layouts designed specifically for the Flipper D-pad
 - In-device comparison against the Flipper's stock text entry mechanism
 - Adaptive visual hints and practice indicators

@@ -39,13 +39,15 @@ static void test_typing_and_cursor(void) {
     assert(dz_editor_choose(&e, DzDirectionLeft, &ch));
     assert(ch == 'a' && strcmp(e.text, "a") == 0);
     assert(e.phase == DzPhaseGrid);
-    assert(dz_editor_move(&e, 1, 1));
+    assert(e.row == 1 && e.col == 1); // Home after typing 'a'.
     dz_editor_select_cell(&e);
     assert(dz_editor_choose(&e, DzDirectionDown, &ch));
     assert(ch == ' ' && strcmp(e.text, "a ") == 0);
+    assert(e.row == 1 && e.col == 1); // Home even for space.
     dz_editor_select_cell(&e);
     assert(dz_editor_choose(&e, DzDirectionUp, &ch));
     assert(ch == '\b' && strcmp(e.text, "a") == 0);
+    assert(e.row == 1 && e.col == 1); // Home after a chosen deletion.
     assert(dz_editor_backspace(&e));
     assert(!dz_editor_backspace(&e));
 }
@@ -59,8 +61,32 @@ static void test_digits_empty_selection(void) {
     char ch = '\xff';
     assert(!dz_editor_choose(&e, DzDirectionLeft, &ch));
     assert(ch == '\0' && e.phase == DzPhaseChoose);
+    assert(e.row == 1 && e.col == 1); // Invalid choice does not exit.
     assert(dz_editor_choose(&e, DzDirectionRight, &ch));
     assert(ch == '5' && strcmp(e.text, "5") == 0);
+    assert(e.row == 1 && e.col == 1);
+}
+
+
+static void test_recenter_and_cancel(void) {
+    DzEditor e;
+    dz_editor_init(&e);
+    assert(dz_editor_move(&e, 1, -1));
+    assert(e.row == 0 && e.col == 2);
+    dz_editor_select_cell(&e);
+    dz_editor_cancel_choice(&e);
+    assert(e.phase == DzPhaseGrid && e.row == 0 && e.col == 2);
+    dz_editor_select_cell(&e);
+    char ch = 0;
+    assert(dz_editor_choose(&e, DzDirectionRight, &ch));
+    assert(ch == 'i' && strcmp(e.text, "i") == 0);
+    assert(e.phase == DzPhaseGrid && e.row == 1 && e.col == 1);
+
+    assert(dz_editor_move(&e, -1, 1));
+    dz_editor_select_cell(&e);
+    assert(dz_editor_choose(&e, DzDirectionUp, &ch));
+    assert(ch == '(' && strcmp(e.text, "i(") == 0);
+    assert(e.row == 1 && e.col == 1);
 }
 
 static void test_capacity(void) {
@@ -76,6 +102,7 @@ int main(void) {
     test_original_layout();
     test_typing_and_cursor();
     test_digits_empty_selection();
+    test_recenter_and_cancel();
     test_capacity();
     puts("All Danzeff core tests passed.");
     return 0;

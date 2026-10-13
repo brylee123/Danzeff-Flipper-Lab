@@ -81,8 +81,14 @@ bool dz_editor_choose(DzEditor* editor, DzDirection direction, char* selected) {
     if(selected) *selected = ch;
     if(!ch) return false; // Keep choice open so another direction can be pressed.
     editor->phase = DzPhaseGrid;
-    if(ch == '\b') return dz_editor_backspace(editor);
-    return dz_editor_insert(editor, ch);
+    bool changed = (ch == '\b') ? dz_editor_backspace(editor) : dz_editor_insert(editor, ch);
+    // Recenter after every successful entry, including a chosen backspace.
+    // An empty choice retains the cell and remains in choice mode (above).
+    if(changed) {
+        editor->row = 1;
+        editor->col = 1;
+    }
+    return changed;
 }
 
 const char* dz_layer_name(DzLayer layer) {
