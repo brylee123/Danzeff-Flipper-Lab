@@ -1,0 +1,11 @@
+App(
+    appid="danzeff_lab",
+    name="Danzeff Lab",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="danzeff_lab_app",
+    requires=["gui", "storage"],
+    stack_size=2048,
+    fap_category="Tools",
+    fap_description="Danzeff keyboard text editor and typing trials",
+    fap_version=(0, 1),
+)

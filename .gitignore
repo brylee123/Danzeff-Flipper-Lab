@@ -1,0 +1,10 @@
+.DS_Store
+__pycache__/
+*.o
+*.fap
+*.elf
+*.map
+*.log
+.ufbt/
+dist/
+build/
