@@ -15,7 +15,8 @@ buttons. The keyboard is **not** a firmware-wide text-input replacement.
 - Verified by initial tester: v0.1 compiles with uFBT and runs on Flipper Zero.
 - Verified by tester: v0.2 renders on-device; inconsistent row reflow motivates v0.3.
 - Verified in CI: v0.4 builds using the official release SDK and passes portable tests.
-- v0.5 fixes compact cells to the LCD edges; on-device visual testing is still required.
+- v0.5 anchors compact cells to the LCD edges.
+- v0.6 shortens the drawn whitespace mark from 6×5 to 5×3 pixels without changing the cell layout; on-device visual testing remains required.
 
 ## Controls
 
@@ -39,7 +40,7 @@ buttons. The keyboard is **not** a firmware-wide text-input replacement.
 The character positions mirror the original PSP implementation: Triangle =
 **Up**, Square = **Left**, Cross = **Down**, Circle = **Right**. The central
 lowercase cell is `[backspace, m, space, n]` in that order. In the cell grid,
-`<` means backspace; **⎵** indicates space (drawn as a tiny custom bitmap-like symbol, while the buffer stores ASCII space). Blank entries in the numbers layer
+`<` means backspace; **⎵** indicates space (rendered as a compact 5×3-pixel open-top bracket matching the v0.6 mockup; text storage remains ASCII space). Blank entries in the numbers layer
 have no function; they leave the four-way chooser open. A usable `0` has been
 added to the numbers layer at center-cell Left. An extra symbol page (`EX+`)
 regroups common ASCII punctuation and digits for quicker access. The original

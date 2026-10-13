@@ -265,18 +265,21 @@ static char lab_visual_char(char c) {
 }
 
 static size_t lab_key_width(Canvas* canvas, char character) {
-    if(character == ' ') return 6; // 5px bracket + 1px advance.
+    if(character == ' ') return 5; // Compact 5x3-pixel space indicator.
     return canvas_glyph_width(canvas, (uint8_t)lab_visual_char(character));
 }
 
 static void lab_draw_key(Canvas* canvas, int32_t x, int32_t baseline, char character) {
     if(character == 0) return;
     if(character == ' ') {
-        // Graphical approximation of U+23B5 BOTTOM SQUARE BRACKET: \u23b5
-        // Open above, horizontal bar below. Avoid the cell border with margins.
-        canvas_draw_line(canvas, x, baseline - 4, x, baseline);
-        canvas_draw_line(canvas, x, baseline, x + 5, baseline);
-        canvas_draw_line(canvas, x + 5, baseline, x + 5, baseline - 4);
+        // 5x3-pixel U+23B5-like mark, matched to the v0.6 pixel mockup:
+        // #...#
+        // #...#
+        // #####
+        // Keep text storage as ASCII ' '; this glyph is visual only.
+        canvas_draw_line(canvas, x, baseline - 2, x, baseline);
+        canvas_draw_line(canvas, x, baseline, x + 4, baseline);
+        canvas_draw_line(canvas, x + 4, baseline, x + 4, baseline - 2);
         return;
     }
     canvas_draw_glyph(canvas, x, baseline, (uint8_t)lab_visual_char(character));
@@ -300,7 +303,7 @@ static void lab_draw_menu(Canvas* canvas, const DanzeffLab* app) {
         "Trial: quick brown fox", "How to use",
     };
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str(canvas, 3, 10, "Danzeff Lab v0.5");
+    canvas_draw_str(canvas, 3, 10, "Danzeff Lab v0.6");
     canvas_set_font(canvas, FontSecondary);
     for(uint8_t i = 0; i < MENU_ITEMS; ++i) {
         lab_draw_label(canvas, 2, (uint8_t)(13 + i * 10), options[i], i == app->menu_selection);
