@@ -19,7 +19,8 @@ for canceling or leaving the editor, never for deleting text. The keyboard is **
 - v0.5 anchors compact cells to the LCD edges.
 - v0.6 shortens the drawn whitespace mark from 6×5 to 5×3 pixels without changing the cell layout.
 - v0.7 restricts text editing to five buttons and removes hardware Back-to-delete.
-- v0.8 uses a compact custom 9×7 pixel **⌫** backspace symbol instead of `<` while preserving the on-screen delete action; on-device verification is pending.
+- v0.8 uses a compact custom 9×7 pixel **⌫** backspace symbol instead of `<` while preserving the on-screen delete action.
+- v0.9 adds 1px of left/right padding around **⌫** and **⎵** in compact and expanded cells, without changing the visible glyphs or cell dimensions. Physical-device visual verification remains pending.
 
 ## Controls
 
