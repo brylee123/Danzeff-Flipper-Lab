@@ -199,7 +199,10 @@ static void lab_handle_editor(DanzeffLab* app, const InputEvent* input) {
         case InputKeyLeft: lab_insert_choice(app, DzDirectionLeft); break;
         case InputKeyDown: lab_insert_choice(app, DzDirectionDown); break;
         case InputKeyRight: lab_insert_choice(app, DzDirectionRight); break;
-        case InputKeyBack: dz_editor_cancel_choice(&app->editor); break;
+        case InputKeyBack:
+            // Cancel a pending choice without modifying the text buffer.
+            dz_editor_cancel_choice(&app->editor);
+            break;
         default: break;
         }
         return;
@@ -214,7 +217,9 @@ static void lab_handle_editor(DanzeffLab* app, const InputEvent* input) {
         if(input->type == InputTypeShort) dz_editor_select_cell(&app->editor);
         break;
     case InputKeyBack:
-        if(dz_editor_backspace(&app->editor)) app->backspaces++;
+        // Back is navigation only. Delete through the on-screen center
+        // cell (OK, then Up), never through a hardware shortcut.
+        if(input->type == InputTypeShort) lab_back_to_menu(app);
         break;
     default: break;
     }
@@ -303,7 +308,7 @@ static void lab_draw_menu(Canvas* canvas, const DanzeffLab* app) {
         "Trial: quick brown fox", "How to use",
     };
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str(canvas, 3, 10, "Danzeff Lab v0.6");
+    canvas_draw_str(canvas, 3, 10, "Danzeff Lab v0.7");
     canvas_set_font(canvas, FontSecondary);
     for(uint8_t i = 0; i < MENU_ITEMS; ++i) {
         lab_draw_label(canvas, 2, (uint8_t)(13 + i * 10), options[i], i == app->menu_selection);
@@ -318,7 +323,7 @@ static void lab_draw_help(Canvas* canvas) {
     canvas_draw_str(canvas, 2, 31, "OK: select cell / 2x border");
     canvas_draw_str(canvas, 2, 41, "D-pad: type, then home");
     canvas_draw_str(canvas, 2, 51, "Hold L/R: previous/next set");
-    canvas_draw_str(canvas, 2, 61, "Hold OK: next  Back:del");
+    canvas_draw_str(canvas, 2, 61, "Hold OK: set Back:cancel/exit");
 }
 
 static void lab_draw_preview(Canvas* canvas, const DanzeffLab* app) {

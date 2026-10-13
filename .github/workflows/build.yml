@@ -13,6 +13,7 @@ jobs:
         run: |
           bash ./tests/run.sh
           python3 ./tests/layout_geometry_test.py
+          python3 ./tests/back_button_policy_test.py
 
   build-fap:
     runs-on: ubuntu-latest

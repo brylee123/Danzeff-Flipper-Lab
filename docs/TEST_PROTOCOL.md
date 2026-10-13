@@ -27,6 +27,16 @@ Do not collect names; assign anonymous IDs. Ask participants for informed consen
 - Phase D: repeat after 3 minutes of free practice and again after 10 minutes.
 - Do not include phrase-reading or setup latency in measured time for either keyboard.
 
+## Five-button typing policy (v0.7 onward)
+
+Text entry and correction use the D-pad and OK only. **Do not use hardware Back
+to delete.** To correct text, choose the center cell then press Up for its
+on-screen backspace character. A short Back cancels a pending choice or
+returns to the menu from grid mode; holding Back also returns to the menu.
+If a participant exits a trial by mistake, discard that attempt and restart.
+This change affects comparability with v0.1–v0.6 trials; always record the
+application version with each result.
+
 ## Measures
 
 Automatic: elapsed milliseconds, gross WPM (5 characters per standard word),

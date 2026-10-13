@@ -1,8 +1,9 @@
 # Danzeff Lab — Flipper Zero proof-of-concept text editor
 
 An **experimental** native Flipper Zero application to evaluate whether the
-PSP-era Danzeff 3×3 keyboard is intuitive and fast with only the Flipper's six
-buttons. The keyboard is **not** a firmware-wide text-input replacement.
+PSP-era Danzeff 3×3 keyboard is intuitive and fast with the Flipper's
+**five text-entry buttons** (D-pad + OK). The hardware Back button is reserved
+for canceling or leaving the editor, never for deleting text. The keyboard is **not** a firmware-wide text-input replacement.
 
 ## Status
 
@@ -16,7 +17,8 @@ buttons. The keyboard is **not** a firmware-wide text-input replacement.
 - Verified by tester: v0.2 renders on-device; inconsistent row reflow motivates v0.3.
 - Verified in CI: v0.4 builds using the official release SDK and passes portable tests.
 - v0.5 anchors compact cells to the LCD edges.
-- v0.6 shortens the drawn whitespace mark from 6×5 to 5×3 pixels without changing the cell layout; on-device visual testing remains required.
+- v0.6 shortens the drawn whitespace mark from 6×5 to 5×3 pixels without changing the cell layout.
+- v0.7 restricts text editing to five buttons and removes hardware Back-to-delete; on-device verification is pending.
 
 ## Controls
 
@@ -30,12 +32,17 @@ buttons. The keyboard is **not** a firmware-wide text-input replacement.
 | Editor: grid | Focused cell | Enlarges to show the 4 directional characters |
 | Editor: grid | OK short | Select the cell (double-thick border) |
 | Editor: choosing | Up / Left / Down / Right | Enter the displayed character, reset focus to center |
-| Editor: choosing | Back short | Cancel choice |
-| Editor: grid | Back short | Delete the last character |
+| Editor: choosing | Back short | Cancel choice (no text modification) |
+| Editor: grid | Back short | Return to menu; save free-edit draft (do not delete) |
 | Editor | OK long | Cycle lowercase → uppercase → digits → symbols → extra symbols |
 | Editor | Back long | Return to menu; saves free-edit draft |
 | Results | OK short | Retry the same phrase |
 | Results | Back short | Return to menu |
+
+**Deletion is only available through the on-screen keyboard:** move to the
+center cell and press **OK → Up** to erase one character. A short hardware Back
+press cannot erase text: it cancels an active selection or leaves the editor.
+An unfinished typing trial is abandoned when returning to the menu.
 
 The character positions mirror the original PSP implementation: Triangle =
 **Up**, Square = **Left**, Cross = **Down**, Circle = **Right**. The central
@@ -68,7 +75,7 @@ empty position in the number layer keeps the selection open.
 - v0.3: focused row/column widened all cells, which distorted the grid.
 - v0.4: all minimized cells became fixed at 40x12, but were still packed
   together rather than anchored to the outer display edges.
-- **v0.5 (current):** outer columns and bottom row are edge-aligned; the
+- **v0.5 onward:** outer columns and bottom row are edge-aligned; the
   focused cell consumes the empty spaces between compact cells, which keep
   their original 40x12 size.
 
