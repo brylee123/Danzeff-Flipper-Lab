@@ -9,8 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Test portable input logic
-        run: ./tests/run.sh
+      - name: Test portable input logic and grid geometry
+        run: |
+          bash ./tests/run.sh
+          python3 ./tests/layout_geometry_test.py
 
   build-fap:
     runs-on: ubuntu-latest
