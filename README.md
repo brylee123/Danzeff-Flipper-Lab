@@ -8,13 +8,13 @@ buttons. The keyboard is **not** a firmware-wide text-input replacement.
 
 - Implemented: single-line, append/backspace ASCII text editor (255 characters)
 - Implemented: authentic Danzeff character table, including cases, digits and symbols
-- Implemented: two-stage navigation/choice UI with aligned, compressed hover expansion
+- Implemented: two-stage navigation/choice UI with fixed-size minimized cells and a 44x20 hover preview
 - Implemented: three fixed, timed typing trials and CSV result capture
 - Implemented: persistent free-edit draft on the SD card
 - Verified: portable keyboard engine passes local C11 unit tests
 - Verified by initial tester: v0.1 compiles with uFBT and runs on Flipper Zero.
 - Verified by tester: v0.2 renders on-device; inconsistent row reflow motivates v0.3.
-- Not yet verified on-device: v0.3 aligned grid geometry and hold-key layer switching.
+- v0.4 is not yet verified by uFBT/device testing; v0.3 has been used on a physical Flipper Zero.
 
 ## Controls
 
@@ -38,7 +38,7 @@ buttons. The keyboard is **not** a firmware-wide text-input replacement.
 The character positions mirror the original PSP implementation: Triangle =
 **Up**, Square = **Left**, Cross = **Down**, Circle = **Right**. The central
 lowercase cell is `[backspace, m, space, n]` in that order. In the cell grid,
-`<` means backspace and `_` means space. Blank entries in the numbers layer
+`<` means backspace; **⎵** indicates space (drawn as a tiny custom bitmap-like symbol, while the buffer stores ASCII space). Blank entries in the numbers layer
 have no function; they leave the four-way chooser open. A usable `0` has been
 added to the numbers layer at center-cell Left. An extra symbol page (`EX+`)
 regroups common ASCII punctuation and digits for quicker access. The original
@@ -49,8 +49,11 @@ four Danzeff pages otherwise retain their mappings.
 From the default center cell, press **Up**, **Left**, **OK**, **Left**.
 That enters `a` and returns to the grid **with the middle cell highlighted**.
 A hovered cell previews its four characters in a small directional cross.
-The 3×3 cells stay in aligned rows/columns; the focused cell is only 42×18 px
-(compared with 44×20 px in v0.2), and minimized cells are 40×10 px. Press
+The selected cell returns to **44×20 px**, as in v0.2, and all other
+cells always remain **40×12 px** regardless of which cell is highlighted.
+Only cell positions shift to fit the expanded cell, not compact cell sizes.
+All characters are centered horizontally (including the expanded cross), and
+the additional two pixels at the bottom prevent symbols touching the border. Press
 OK to activate the double-thick border; press a direction to type. Non-hovered
 cells always keep their four characters inline, so the full layout remains
 visible. Canceling selection with Back retains the hovered cell. Choosing an
@@ -127,7 +130,13 @@ not to serve as a full-featured notepad.
 
 ## Attribution and license
 
-This proof of concept reuses the Danzeff **character layout and selection
-semantics**, but not its PSP graphics or rendering code. Attribution is in
-[docs/THIRD_PARTY.md](docs/THIRD_PARTY.md). This project's original code is
-BSD-2-Clause; review the upstream license prior to broader distribution.
+Danzeff Lab acknowledges the authors and maintainers of
+[Danzeff-G](https://github.com/libcg/Danzeff-G): **danzel**, **Jeff Chen**, and
+**geecko (Clément G)**. Our foundational four character layouts have been
+reviewed against the latest `master` source (2012-07-04,
+`daf3c4cd04b264504781d758c38411419d48bca1`), not copied as a PSP library.
+The BSD 3-Clause copyright and disclaimer are preserved in full at
+[docs/licenses/DANZEFF-G-LICENSE.txt](docs/licenses/DANZEFF-G-LICENSE.txt),
+with provenance and port-specific differences in
+[docs/THIRD_PARTY.md](docs/THIRD_PARTY.md). Our own Flipper-only implementation
+is BSD 2-Clause. Attribution is not endorsement by the original authors.

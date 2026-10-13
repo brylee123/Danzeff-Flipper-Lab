@@ -255,11 +255,31 @@ static void lab_handle_input(DanzeffLab* app, const InputEvent* event) {
     }
 }
 
+// Space is rendered with a small U-shaped \u23b5 indicator, not a font glyph.
+// The stock FontKeyboard does not reliably contain that Unicode symbol.
+// This is display-only; the underlying editor continues to store ASCII ' '.
 static char lab_visual_char(char c) {
     if(c == 0) return ' ';
     if(c == '\b') return '<';
-    if(c == ' ') return '_';
     return c;
+}
+
+static size_t lab_key_width(Canvas* canvas, char character) {
+    if(character == ' ') return 6; // 5px bracket + 1px advance.
+    return canvas_glyph_width(canvas, (uint8_t)lab_visual_char(character));
+}
+
+static void lab_draw_key(Canvas* canvas, int32_t x, int32_t baseline, char character) {
+    if(character == 0) return;
+    if(character == ' ') {
+        // Graphical approximation of U+23B5 BOTTOM SQUARE BRACKET: \u23b5
+        // Open above, horizontal bar below. Avoid the cell border with margins.
+        canvas_draw_line(canvas, x, baseline - 4, x, baseline);
+        canvas_draw_line(canvas, x, baseline, x + 5, baseline);
+        canvas_draw_line(canvas, x + 5, baseline, x + 5, baseline - 4);
+        return;
+    }
+    canvas_draw_glyph(canvas, x, baseline, (uint8_t)lab_visual_char(character));
 }
 
 static void lab_draw_label(Canvas* canvas, uint8_t x, uint8_t y, const char* text, bool selected) {
@@ -280,7 +300,7 @@ static void lab_draw_menu(Canvas* canvas, const DanzeffLab* app) {
         "Trial: quick brown fox", "How to use",
     };
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str(canvas, 3, 10, "Danzeff Lab v0.3");
+    canvas_draw_str(canvas, 3, 10, "Danzeff Lab v0.4");
     canvas_set_font(canvas, FontSecondary);
     for(uint8_t i = 0; i < MENU_ITEMS; ++i) {
         lab_draw_label(canvas, 2, (uint8_t)(13 + i * 10), options[i], i == app->menu_selection);
@@ -320,62 +340,78 @@ static void lab_draw_preview(Canvas* canvas, const DanzeffLab* app) {
     while(*tail && (canvas_string_width(canvas, tail) > text_width ||
                     strlen(tail) >= sizeof(line) - 2)) tail++;
     snprintf(line, sizeof(line), ">%s_", tail);
-    canvas_draw_str(canvas, 2, 20, line);
-    canvas_draw_str(canvas, layer_x, 20, layer_label);
+    canvas_draw_str(canvas, 2, 18, line);
+    canvas_draw_str(canvas, layer_x, 18, layer_label);
 }
 
-// Stable 3x3 grid: every column shares a width and every row shares a
-// height. Only the focused column/row gains two/eight pixels; the others
-// remain compact. This avoids the uneven row breaks of v0.2.
-// Total area: 126x42 pixels at (1,22) through (126,63), inclusive.
-#define LAB_GRID_LEFT  1
-#define LAB_GRID_TOP   22
-#define LAB_GAP        2
+// Layout experiment v0.4:
+// - Nonfocused cells are ALWAYS 40x12, whether in a selected row/column or not.
+// - The focused cell is 44x20 (restored v0.2 hover size).
+// - Columns and rows reflow their *positions*, never their compact dimensions.
+// - Exactly 1px horizontal gaps, no vertical gaps: 126x44 at (1,20).
+// - The shape remains inside the 128x64 LCD in all nine focus positions.
+// This is intentionally easy to revert for comparative user testing.
+#define LAB_GRID_LEFT 1
+#define LAB_GRID_TOP 20
+#define LAB_COLUMN_GAP 1
 #define LAB_CELL_WIDTH 40
-#define LAB_CELL_HEIGHT 10
-#define LAB_HOVER_WIDTH 42
-#define LAB_HOVER_HEIGHT 18
+#define LAB_CELL_HEIGHT 12
+#define LAB_HOVER_WIDTH 44
+#define LAB_HOVER_HEIGHT 20
 
 static void lab_draw_grid(Canvas* canvas, const DanzeffLab* app) {
     const DzEditor* editor = &app->editor;
     const bool choosing = editor->phase == DzPhaseChoose;
-    // Original Danzeff directional mapping: up, left, down, right.
-    static const uint8_t dx[] = {21, 10, 21, 32};
-    static const uint8_t dy[] = {7, 12, 16, 12};
-    canvas_set_color(canvas, ColorBlack);
     canvas_set_font(canvas, FontKeyboard);
+    canvas_set_color(canvas, ColorBlack);
 
     int32_t y = LAB_GRID_TOP;
     for(uint8_t row = 0; row < 3; ++row) {
-        const bool focus_row = row == editor->row;
-        const int32_t row_height = focus_row ? LAB_HOVER_HEIGHT : LAB_CELL_HEIGHT;
+        const int32_t row_step = (row == editor->row) ? LAB_HOVER_HEIGHT : LAB_CELL_HEIGHT;
         int32_t x = LAB_GRID_LEFT;
-
         for(uint8_t col = 0; col < 3; ++col) {
-            const bool focused = focus_row && col == editor->col;
-            const int32_t width = (col == editor->col) ? LAB_HOVER_WIDTH : LAB_CELL_WIDTH;
-            canvas_draw_frame(canvas, x, y, width, row_height);
+            const bool focused = row == editor->row && col == editor->col;
+            const int32_t width = focused ? LAB_HOVER_WIDTH : LAB_CELL_WIDTH;
+            const int32_t height = focused ? LAB_HOVER_HEIGHT : LAB_CELL_HEIGHT;
+            canvas_draw_frame(canvas, x, y, width, height);
 
             if(focused) {
-                // OK commits the cell: emphasize its border, not its position.
-                if(choosing) canvas_draw_frame(canvas, x + 1, y + 1, width - 2, row_height - 2);
+                if(choosing) {
+                    canvas_draw_frame(canvas, x + 1, y + 1, width - 2, height - 2);
+                }
+                // Center all four directional glyphs relative to the 44px box.
+                // Left/right have equal 7px outer margins; up/down are centered.
+                static const uint8_t baseline[] = {7, 13, 18, 13};
                 for(uint8_t direction = 0; direction < 4; ++direction) {
                     const char ch = dz_editor_cell_char(editor, row, col, (DzDirection)direction);
-                    if(ch) canvas_draw_glyph(canvas, x + dx[direction], y + dy[direction], lab_visual_char(ch));
+                    if(!ch) continue;
+                    const int32_t glyph_width = (int32_t)lab_key_width(canvas, ch);
+                    int32_t char_x;
+                    if(direction == DzDirectionLeft) char_x = x + 7;
+                    else if(direction == DzDirectionRight) char_x = x + width - 7 - glyph_width;
+                    else char_x = x + (width - glyph_width) / 2;
+                    lab_draw_key(canvas, char_x, y + baseline[direction], ch);
                 }
             } else {
-                // Every minimized cell retains its four inline characters.
-                char chars[5];
+                // Four characters remain inline and centered, with the same
+                // 40x12 border for every nonfocused cell.
+                char characters[4];
+                int32_t total_width = 0;
                 for(uint8_t direction = 0; direction < 4; ++direction) {
-                    chars[direction] = lab_visual_char(
-                        dz_editor_cell_char(editor, row, col, (DzDirection)direction));
+                    characters[direction] = dz_editor_cell_char(editor, row, col, (DzDirection)direction);
+                    total_width += (int32_t)lab_key_width(canvas, characters[direction]);
                 }
-                chars[4] = '\0';
-                canvas_draw_str(canvas, x + 7, y + 8, chars);
+                int32_t char_x = x + (width - total_width) / 2;
+                for(uint8_t direction = 0; direction < 4; ++direction) {
+                    lab_draw_key(canvas, char_x, y + 8, characters[direction]);
+                    char_x += (int32_t)lab_key_width(canvas, characters[direction]);
+                }
             }
-            x += width + LAB_GAP;
+            // Only positions shift in the selected column: dimensions of
+            // every minimized cell are unaffected.
+            x += width + LAB_COLUMN_GAP;
         }
-        y += row_height + LAB_GAP;
+        y += row_step;
     }
 }
 

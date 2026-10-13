@@ -3,7 +3,9 @@
 #include <string.h>
 
 // Four chars per cell: up, left, down, right. Port of the character
-// mapping in PSP-Archive/DanzeffOSLib/danzeff.c (BSD-licensed upstream).
+// mapping in libcg/Danzeff-G/danzeff.c (BSD-3-Clause; see docs/licenses/).
+// Based on latest Danzeff-G master (daf3c4c, 2012-07-04).
+// Layout has Flipper-specific extensions: numeric 0 and extra symbols.
 static const char dz_layout[DzLayerCount][3][3][4] = {
     { // lowercase
         {{',', 'a', 'b', 'c'}, {'.', 'd', 'e', 'f'}, {'!', 'g', 'h', 'i'}},
@@ -21,7 +23,7 @@ static const char dz_layout[DzLayerCount][3][3][4] = {
         {{0, 0, 0, '7'}, {0, 0, 0, '8'}, {0, 0, 0, '9'}},
     },
     { // original Danzeff symbols (R held in the number layer)
-        {{'\'', '(', '.', ')'}, {'"', '<', '\'', '>'}, {'-', '[', '_', ']'}},
+        {{',', '(', '.', ')'}, {'"', '<', '\'', '>'}, {'-', '[', '_', ']'}},
         {{'!', '{', '?', '}'}, {'\b', 0, ' ', 0}, {'+', '\\', '=', '/'}},
         {{':', '@', ';', '#'}, {'~', '$', '`', '%'}, {'*', '^', '|', '&'}},
     },

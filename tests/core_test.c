@@ -16,6 +16,13 @@ static void test_original_layout(void) {
     assert(dz_editor_cell_char(&e, 0, 0, DzDirectionRight) == 'c');
     assert(dz_editor_cell_char(&e, 1, 1, DzDirectionUp) == '\b');
     assert(dz_editor_cell_char(&e, 1, 1, DzDirectionDown) == ' ');
+    // Current Danzeff-G master differs from older OSlib in this symbol.
+    dz_editor_step_layer(&e, 1);
+    dz_editor_step_layer(&e, 1);
+    dz_editor_step_layer(&e, 1);
+    assert(dz_editor_cell_char(&e, 0, 0, DzDirectionUp) == ',');
+    dz_editor_step_layer(&e, 1);
+    dz_editor_step_layer(&e, 1);
     dz_editor_cycle_layer(&e);
     assert(dz_editor_cell_char(&e, 0, 0, DzDirectionLeft) == 'A');
     dz_editor_cycle_layer(&e);
