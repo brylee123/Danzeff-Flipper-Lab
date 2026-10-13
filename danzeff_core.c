@@ -17,13 +17,18 @@ static const char dz_layout[DzLayerCount][3][3][4] = {
     },
     { // digits: original mapping only has a rightward choice per digit
         {{0, 0, 0, '1'}, {0, 0, 0, '2'}, {0, 0, 0, '3'}},
-        {{0, 0, 0, '4'}, {'\b', 0, ' ', '5'}, {0, 0, 0, '6'}},
+        {{0, 0, 0, '4'}, {'\b', '0', ' ', '5'}, {0, 0, 0, '6'}},
         {{0, 0, 0, '7'}, {0, 0, 0, '8'}, {0, 0, 0, '9'}},
     },
-    { // symbols
+    { // original Danzeff symbols (R held in the number layer)
         {{'\'', '(', '.', ')'}, {'"', '<', '\'', '>'}, {'-', '[', '_', ']'}},
         {{'!', '{', '?', '}'}, {'\b', 0, ' ', 0}, {'+', '\\', '=', '/'}},
         {{':', '@', ';', '#'}, {'~', '$', '`', '%'}, {'*', '^', '|', '&'}},
+    },
+    { // Extra convenience page: regroup existing symbols; make 0 easy to find.
+        {{'@', '#', '$', '%'}, {'^', '&', '*', '+'}, {'-', '_', '=', '~'}},
+        {{'<', '[', ']', '>'}, {'\b', '0', ' ', '.'}, {'\\', '/', '|', ':'}},
+        {{'!', '?', ',', ';'}, {'\'', '"', '`', '('}, {')', '{', '}', '_'}},
     },
 };
 
@@ -56,9 +61,16 @@ bool dz_editor_move(DzEditor* editor, int8_t dx, int8_t dy) {
     return true;
 }
 
-void dz_editor_cycle_layer(DzEditor* editor) {
-    editor->layer = (DzLayer)((editor->layer + 1) % DzLayerCount);
+void dz_editor_step_layer(DzEditor* editor, int8_t step) {
+    int next = (int)editor->layer + step;
+    if(next < 0) next += DzLayerCount;
+    if(next >= DzLayerCount) next -= DzLayerCount;
+    editor->layer = (DzLayer)next;
     editor->phase = DzPhaseGrid;
+}
+
+void dz_editor_cycle_layer(DzEditor* editor) {
+    dz_editor_step_layer(editor, 1);
 }
 
 void dz_editor_select_cell(DzEditor* editor) {
@@ -92,7 +104,7 @@ bool dz_editor_choose(DzEditor* editor, DzDirection direction, char* selected) {
 }
 
 const char* dz_layer_name(DzLayer layer) {
-    static const char* const names[] = {"abc", "ABC", "123", "#$%"};
+    static const char* const names[] = {"abc", "ABC", "123", "SYM", "EX+"};
     if(layer >= DzLayerCount) return "?";
     return names[layer];
 }
