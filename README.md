@@ -8,13 +8,14 @@ buttons. The keyboard is **not** a firmware-wide text-input replacement.
 
 - Implemented: single-line, append/backspace ASCII text editor (255 characters)
 - Implemented: authentic Danzeff character table, including cases, digits and symbols
-- Implemented: two-stage navigation/choice UI with fixed-size minimized cells and a 44x20 hover preview
+- Implemented: two-stage navigation/choice UI with fixed-size minimized cells and edge-anchored 44-48x20 hover expansion
 - Implemented: three fixed, timed typing trials and CSV result capture
 - Implemented: persistent free-edit draft on the SD card
 - Verified: portable keyboard engine passes local C11 unit tests
 - Verified by initial tester: v0.1 compiles with uFBT and runs on Flipper Zero.
 - Verified by tester: v0.2 renders on-device; inconsistent row reflow motivates v0.3.
-- v0.4 is not yet verified by uFBT/device testing; v0.3 has been used on a physical Flipper Zero.
+- Verified in CI: v0.4 builds using the official release SDK and passes portable tests.
+- v0.5 fixes compact cells to the LCD edges; on-device visual testing is still required.
 
 ## Controls
 
@@ -49,15 +50,26 @@ four Danzeff pages otherwise retain their mappings.
 From the default center cell, press **Up**, **Left**, **OK**, **Left**.
 That enters `a` and returns to the grid **with the middle cell highlighted**.
 A hovered cell previews its four characters in a small directional cross.
-The selected cell returns to **44×20 px**, as in v0.2, and all other
-cells always remain **40×12 px** regardless of which cell is highlighted.
-Only cell positions shift to fit the expanded cell, not compact cell sizes.
-All characters are centered horizontally (including the expanded cross), and
-the additional two pixels at the bottom prevent symbols touching the border. Press
+All unselected cells remain **40×12 px**. Left-column cells start at pixel
+**x=0**, right-column cells end at **x=127**, and every bottom-row cell ends at
+**y=63**. The grid starts at y=20, preserving the two text-preview lines.
+The focused cell expands into the available gutters without resizing any other
+cell: **44×20 px** on the left or right, or **48×20 px** in the middle
+(to fill both horizontal gaps). Row positions adjust only as needed to
+accommodate the 20-pixel focus. All direction glyphs remain centered. Press
 OK to activate the double-thick border; press a direction to type. Non-hovered
 cells always keep their four characters inline, so the full layout remains
 visible. Canceling selection with Back retains the hovered cell. Choosing an
 empty position in the number layer keeps the selection open.
+
+## Layout experiment history
+
+- v0.3: focused row/column widened all cells, which distorted the grid.
+- v0.4: all minimized cells became fixed at 40x12, but were still packed
+  together rather than anchored to the outer display edges.
+- **v0.5 (current):** outer columns and bottom row are edge-aligned; the
+  focused cell consumes the empty spaces between compact cells, which keep
+  their original 40x12 size.
 
 ## Character-set switching
 

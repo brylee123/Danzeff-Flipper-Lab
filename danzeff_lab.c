@@ -300,7 +300,7 @@ static void lab_draw_menu(Canvas* canvas, const DanzeffLab* app) {
         "Trial: quick brown fox", "How to use",
     };
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str(canvas, 3, 10, "Danzeff Lab v0.4");
+    canvas_draw_str(canvas, 3, 10, "Danzeff Lab v0.5");
     canvas_set_font(canvas, FontSecondary);
     for(uint8_t i = 0; i < MENU_ITEMS; ++i) {
         lab_draw_label(canvas, 2, (uint8_t)(13 + i * 10), options[i], i == app->menu_selection);
@@ -344,20 +344,40 @@ static void lab_draw_preview(Canvas* canvas, const DanzeffLab* app) {
     canvas_draw_str(canvas, layer_x, 18, layer_label);
 }
 
-// Layout experiment v0.4:
-// - Nonfocused cells are ALWAYS 40x12, whether in a selected row/column or not.
-// - The focused cell is 44x20 (restored v0.2 hover size).
-// - Columns and rows reflow their *positions*, never their compact dimensions.
-// - Exactly 1px horizontal gaps, no vertical gaps: 126x44 at (1,20).
-// - The shape remains inside the 128x64 LCD in all nine focus positions.
-// This is intentionally easy to revert for comparative user testing.
-#define LAB_GRID_LEFT 1
+// Layout experiment v0.5: anchor the compact cells to the LCD edges.
+// Every nonfocused cell stays 40x12. The focused cell occupies the empty
+// gutters between the fixed-size cells; the outer columns and bottom row
+// remain flush with the LCD edges. No cell is resized except the focused one.
+//
+// Horizontal positions (128px LCD):
+//   Compact:  left x=0..39, middle x=44..83, right x=88..127
+//   Focus L:  x=0..43 (44px), middle compact x=44
+//   Focus M:  x=40..87 (48px), fills both 4px gutters
+//   Focus R:  x=84..127 (44px), middle compact ends at x=83
+//
+// Vertical positions (20..63): top anchored at y=20; bottom always
+// reaches pixel 63. One expanded row is 20px and two compact rows are
+// 12px each (total height 44px), so the focus absorbs the vertical gaps.
 #define LAB_GRID_TOP 20
-#define LAB_COLUMN_GAP 1
+#define LAB_GRID_BOTTOM 63
 #define LAB_CELL_WIDTH 40
 #define LAB_CELL_HEIGHT 12
-#define LAB_HOVER_WIDTH 44
 #define LAB_HOVER_HEIGHT 20
+#define LAB_HOVER_EDGE_WIDTH 44
+#define LAB_HOVER_CENTER_WIDTH 48
+
+static int32_t lab_cell_x(uint8_t col, bool focused) {
+    if(col == 0) return 0;
+    if(col == 1) return focused ? 40 : 44;
+    return focused ? 84 : 88;
+}
+
+static int32_t lab_cell_y(uint8_t row, uint8_t focused_row, bool focused) {
+    if(row == 0) return LAB_GRID_TOP;
+    if(row == 1) return focused_row == 0 ? 40 : 32;
+    return focused ? LAB_GRID_BOTTOM - LAB_HOVER_HEIGHT + 1 :
+                     LAB_GRID_BOTTOM - LAB_CELL_HEIGHT + 1;
+}
 
 static void lab_draw_grid(Canvas* canvas, const DanzeffLab* app) {
     const DzEditor* editor = &app->editor;
@@ -365,23 +385,23 @@ static void lab_draw_grid(Canvas* canvas, const DanzeffLab* app) {
     canvas_set_font(canvas, FontKeyboard);
     canvas_set_color(canvas, ColorBlack);
 
-    int32_t y = LAB_GRID_TOP;
     for(uint8_t row = 0; row < 3; ++row) {
-        const int32_t row_step = (row == editor->row) ? LAB_HOVER_HEIGHT : LAB_CELL_HEIGHT;
-        int32_t x = LAB_GRID_LEFT;
         for(uint8_t col = 0; col < 3; ++col) {
             const bool focused = row == editor->row && col == editor->col;
-            const int32_t width = focused ? LAB_HOVER_WIDTH : LAB_CELL_WIDTH;
+            const int32_t width = focused ?
+                (col == 1 ? LAB_HOVER_CENTER_WIDTH : LAB_HOVER_EDGE_WIDTH) :
+                LAB_CELL_WIDTH;
             const int32_t height = focused ? LAB_HOVER_HEIGHT : LAB_CELL_HEIGHT;
-            canvas_draw_frame(canvas, x, y, width, height);
+            const int32_t x = lab_cell_x(col, focused);
+            const int32_t y = lab_cell_y(row, editor->row, focused);
 
+            canvas_draw_frame(canvas, x, y, width, height);
             if(focused) {
                 if(choosing) {
                     canvas_draw_frame(canvas, x + 1, y + 1, width - 2, height - 2);
                 }
-                // Center all four directional glyphs relative to the 44px box.
-                // Left/right have equal 7px outer margins; up/down are centered.
-                static const uint8_t baseline[] = {7, 13, 18, 13};
+                // Keep the cross symmetrical relative to each focused cell.
+                static const uint8_t baseline[] = {8, 13, 17, 13};
                 for(uint8_t direction = 0; direction < 4; ++direction) {
                     const char ch = dz_editor_cell_char(editor, row, col, (DzDirection)direction);
                     if(!ch) continue;
@@ -393,8 +413,8 @@ static void lab_draw_grid(Canvas* canvas, const DanzeffLab* app) {
                     lab_draw_key(canvas, char_x, y + baseline[direction], ch);
                 }
             } else {
-                // Four characters remain inline and centered, with the same
-                // 40x12 border for every nonfocused cell.
+                // All eight minimized cells remain the same 40x12 size,
+                // with their inline labels centered and two lower pixels free.
                 char characters[4];
                 int32_t total_width = 0;
                 for(uint8_t direction = 0; direction < 4; ++direction) {
@@ -407,11 +427,7 @@ static void lab_draw_grid(Canvas* canvas, const DanzeffLab* app) {
                     char_x += (int32_t)lab_key_width(canvas, characters[direction]);
                 }
             }
-            // Only positions shift in the selected column: dimensions of
-            // every minimized cell are unaffected.
-            x += width + LAB_COLUMN_GAP;
         }
-        y += row_step;
     }
 }
 
